@@ -132,7 +132,8 @@ echo ""
 
 # Write converted content to sharehub
 DEST_NOTE="$SHAREHUB_PATH/documents/$NOTE_FILE"
-mkdir -p "$SHAREHUB_PATH/documents"
+DEST_DIR=$(dirname "$DEST_NOTE")
+mkdir -p "$DEST_DIR"
 echo "$CONVERTED_CONTENT" > "$DEST_NOTE"
 
 echo "✅ Copied note to: documents/$NOTE_FILE"
