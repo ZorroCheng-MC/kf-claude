@@ -1,0 +1,39 @@
+{
+  "name": "kf-claude",
+  "owner": {
+    "name": "crewnest.ai",
+    "email": "info@crewnest.ai"
+  },
+  "metadata": {
+    "description": "KnowledgeFactory for Claude Code - AI-powered knowledge capture and management",
+    "version": "1.0.0",
+    "repository": "https://github.com/knowledgefactory/kf-claude",
+    "license": "MIT",
+    "keywords": [
+      "knowledge-management",
+      "obsidian",
+      "capture",
+      "ai-powered",
+      "claude-code"
+    ]
+  },
+  "plugins": [
+    {
+      "name": "kf-claude",
+      "description": "KnowledgeFactory for Claude Code - smart capture, AI tagging, publishing",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./kf-claude"
+      ],
+      "commands": [
+        "./commands/capture.md",
+        "./commands/youtube-note.md",
+        "./commands/idea.md",
+        "./commands/study-guide.md",
+        "./commands/publish.md",
+        "./commands/gitingest.md"
+      ]
+    }
+  ]
+}
