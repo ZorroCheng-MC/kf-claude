@@ -1,5 +1,6 @@
 ---
-description: Interactive setup wizard for Obsidian Vault Manager
+description: Setup wizard for KnowledgeFactory Claude Code plugin
+argument-hint: [--enable-short-commands] (optional: enable /capture instead of /kf-claude:capture)
 allowed-tools:
   - Bash(*)
   - Read(*)
@@ -9,97 +10,134 @@ allowed-tools:
 ## Context
 
 - **Current Directory:** `$PWD`
-- **Plugin Location:** `~/.claude/plugins/marketplaces/obsidian-vault-manager-plugin/`
+- **Plugin Location:** `~/.claude/plugins/marketplaces/kf-claude/`
+- **Arguments:** `$ARGUMENTS`
 
 ## Task
 
-Run the interactive setup wizard to configure Obsidian Vault Manager for this vault.
+Run the setup wizard to configure KnowledgeFactory for this vault.
 
-**Important:** You must run Claude Code from your Obsidian vault directory for this setup to work correctly.
-
-## Implementation
-
-Execute the setup script from the plugin directory:
+## Step 1: Verify Environment
 
 ```bash
-# Locate the plugin installation
-PLUGIN_DIR="$HOME/.claude/plugins/marketplaces/obsidian-vault-manager-plugin"
+# Check we're in an Obsidian vault
+if [[ ! -d ".obsidian" ]]; then
+    echo "⚠️  Warning: No .obsidian folder found. Are you in an Obsidian vault?"
+fi
 
-# Check if plugin is installed
+# Check plugin is installed
+PLUGIN_DIR="$HOME/.claude/plugins/marketplaces/kf-claude"
 if [[ ! -d "$PLUGIN_DIR" ]]; then
-    echo "❌ Plugin not found. Please install it first:"
-    echo "   claude plugin add obsidian-vault-manager"
+    echo "❌ kf-claude plugin not found at: $PLUGIN_DIR"
+    echo "   Install with: /plugin install kf-claude"
     exit 1
 fi
 
-# Run setup script
-SETUP_SCRIPT="$PLUGIN_DIR/scripts/setup.sh"
+echo "✅ kf-claude plugin found"
+echo "📂 Vault path: $PWD"
+```
 
-if [[ -f "$SETUP_SCRIPT" ]]; then
-    chmod +x "$SETUP_SCRIPT"
-    bash "$SETUP_SCRIPT"
+## Step 2: Check Dependencies
+
+Verify required tools are available:
+
+```bash
+echo "Checking dependencies..."
+
+# Required
+command -v git >/dev/null && echo "✅ git" || echo "❌ git (required)"
+command -v python3 >/dev/null && echo "✅ python3" || echo "❌ python3 (required)"
+
+# Optional but recommended
+command -v jq >/dev/null && echo "✅ jq" || echo "⚠️  jq (optional, install: brew install jq)"
+command -v uvx >/dev/null && echo "✅ uvx" || echo "⚠️  uvx (optional, for YouTube transcripts: brew install uv)"
+```
+
+## Step 3: Create Vault Configuration
+
+Create `.claude/config.local.json` with vault-specific settings:
+
+```bash
+mkdir -p .claude
+
+# Create config if not exists
+if [[ ! -f ".claude/config.local.json" ]]; then
+    cat > .claude/config.local.json << 'EOF'
+{
+  "vault_path": "$PWD",
+  "sharehub_url": "https://zorrocheng-mc.github.io/sharehub",
+  "sharehub_repo": "~/Dev/sharehub",
+  "enable_short_commands": false
+}
+EOF
+    echo "✅ Created .claude/config.local.json"
 else
-    echo "❌ Setup script not found at: $SETUP_SCRIPT"
-    echo "Plugin may be corrupted. Try reinstalling:"
-    echo "   claude plugin remove obsidian-vault-manager"
-    echo "   claude plugin add obsidian-vault-manager"
-    exit 1
+    echo "ℹ️  .claude/config.local.json already exists"
 fi
 ```
 
-## What This Does
+## Step 4: Enable Short Commands (Optional)
 
-The setup wizard will:
+If `--enable-short-commands` is passed, copy commands to vault for direct access:
 
-1. **Detect Your Vault**
-   - Verifies you're in an Obsidian vault (checks for `.obsidian/` folder)
-   - Confirms the vault path
+```bash
+if [[ "$ARGUMENTS" == *"--enable-short-commands"* ]]; then
+    echo "📝 Enabling short commands..."
 
-2. **Check Dependencies**
-   - uv/uvx (for YouTube transcripts)
-   - jq (for JSON processing)
-   - python3 (for image path conversion)
-   - git (for publishing)
+    PLUGIN_COMMANDS="$HOME/.claude/plugins/marketplaces/kf-claude/commands"
+    VAULT_COMMANDS=".claude/commands"
 
-3. **Configure GitHub Pages** (optional)
-   - GitHub Pages repository path
-   - GitHub Pages URL
-   - Repository name
+    mkdir -p "$VAULT_COMMANDS"
 
-4. **Create Configuration Files**
-   - `.claude/settings.local.json` (vault-specific settings)
-   - `.claude/config.sh` (for bash scripts)
-   - `.claude/.gitignore` (prevents committing personal paths)
+    # Copy each command (creates local copies for /capture instead of /kf-claude:capture)
+    for cmd in capture.md youtube-note.md idea.md gitingest.md study-guide.md publish.md semantic-search.md share.md; do
+        if [[ -f "$PLUGIN_COMMANDS/$cmd" ]]; then
+            cp "$PLUGIN_COMMANDS/$cmd" "$VAULT_COMMANDS/$cmd"
+            echo "  ✅ /$cmd enabled"
+        fi
+    done
 
-## After Setup
-
-Your vault will have:
-
-```
-your-vault/
-└── .claude/
-    ├── settings.local.json    (vault-specific configuration)
-    ├── config.sh              (script configuration)
-    └── .gitignore             (prevents committing personal paths)
+    echo ""
+    echo "✅ Short commands enabled!"
+    echo "   You can now use /capture instead of /kf-claude:capture"
+else
+    echo ""
+    echo "ℹ️  Short commands not enabled."
+    echo "   Use /kf-claude:capture, /kf-claude:idea, etc."
+    echo "   To enable short commands, run: /kf-claude:setup --enable-short-commands"
+fi
 ```
 
-## Troubleshooting
+## Step 5: Summary
 
-**"Not in vault directory"**
-- Make sure you `cd` to your vault first
-- Check that `.obsidian/` folder exists
+Display setup summary:
 
-**"Plugin not found"**
-- Install plugin: `claude plugin add obsidian-vault-manager`
+```
+🎉 KnowledgeFactory Setup Complete!
 
-**"Missing dependencies"**
-- Install with: `brew install uv jq git`
+Plugin: kf-claude v1.0.0
+Vault: $PWD
+
+Available Commands:
+  /kf-claude:capture      - Universal content capture
+  /kf-claude:youtube-note - YouTube video with transcript
+  /kf-claude:idea         - Quick idea capture
+  /kf-claude:gitingest    - GitHub repository analysis
+  /kf-claude:study-guide  - Generate study materials
+  /kf-claude:publish      - Publish to GitHub Pages
+  /kf-claude:share        - Generate shareable URL
+  /kf-claude:semantic-search - Search vault by meaning
+
+Configuration:
+  ~/.claude/plugins/marketplaces/kf-claude/  (plugin)
+  .claude/config.local.json                   (vault config)
+
+Need help? https://github.com/ZorroCheng-MC/kf-claude
+```
 
 ## Re-running Setup
 
-You can run `/setup` again to:
-- Update paths
-- Reconfigure GitHub Pages
-- Fix broken configuration
-
-Existing configuration will be overwritten.
+Run `/kf-claude:setup` again to:
+- Update configuration
+- Enable/disable short commands
+- Check dependencies
