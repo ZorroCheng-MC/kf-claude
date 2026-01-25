@@ -3,8 +3,7 @@ description: Publish note to GitHub Pages (sharehub) with proper image handling
 argument-hint: [filename] (note to publish, e.g., my-article.md)
 allowed-tools:
   - Bash(*)
-  - mcp__fetch__fetch
-  - mcp__github__*
+  - Read(*)
 ---
 
 ## Task
@@ -14,39 +13,51 @@ Publish note to GitHub Pages using the bundled publish script.
 **Input**: `$ARGUMENTS` (filename with or without .md extension)
 **Operation**: Publish to GitHub Pages with image handling
 
+## Prerequisites
+
+Run `/kf-claude:setup` first to configure:
+- `sharehub_repo` - Path to your sharehub repository
+- `sharehub_url` - Your GitHub Pages URL
+
 ## Implementation
 
-Run the bundled publish script directly:
+Run the bundled publish script:
 
 ```bash
-SKILL_DIR="$HOME/.claude/skills/obsidian-vault-manager"
-"$SKILL_DIR/scripts/core/publish.sh" "$ARGUMENTS"
+PLUGIN_DIR="$HOME/.claude/plugins/marketplaces/kf-claude/kf-claude"
+VAULT_PATH="$(pwd)"
+
+# Check config exists
+if [[ ! -f ".claude/config.local.json" ]]; then
+    echo "❌ Config not found. Run /kf-claude:setup first"
+    exit 1
+fi
+
+# Run publish script
+"$PLUGIN_DIR/scripts/core/publish.sh" "$ARGUMENTS" "$VAULT_PATH"
 ```
 
 The script will:
-1. Validate note exists in vault
-2. Find all image references in note
-3. Copy images from vault to sharehub repository
-4. Convert image paths (./images/ → /sharehub/images/)
-5. Copy note with converted paths to sharehub/documents/
-6. Git commit and push to GitHub
-7. Output the published URL
+1. Read sharehub path from `.claude/config.local.json`
+2. Validate note exists in vault
+3. Find all image references in note
+4. Copy images from vault to sharehub repository
+5. Convert image paths for GitHub Pages
+6. Copy note with converted paths to sharehub/documents/
+7. Git commit and push to GitHub
+8. Output the published URL
 
-## After Script Completes
+## Configuration
 
-1. Wait for GitHub Pages deployment (~60 seconds):
-   ```bash
-   sleep 60
-   ```
+The script reads from `.claude/config.local.json`:
 
-2. Verify published page using `mcp__fetch__fetch`
-
-## Publishing Configuration
-
-- **Vault Path**: `/Users/zorro/Documents/Obsidian/Claudecode`
-- **Sharehub Path**: `/Users/zorro/Dev/sharehub`
-- **Repository**: `ZorroCheng-MC/sharehub`
-- **GitHub Pages URL**: `https://zorrocheng-mc.github.io/sharehub`
+```json
+{
+  "vault_path": "/path/to/vault",
+  "sharehub_url": "https://username.github.io/sharehub",
+  "sharehub_repo": "~/Dev/sharehub"
+}
+```
 
 ## Image Path Conversion
 
@@ -63,18 +74,23 @@ After successful publish:
 - ✅ Git commit created with proper message
 - ✅ Pushed to GitHub
 - ✅ GitHub Pages deployment triggered
-- ✅ Published URL: `https://zorrocheng-mc.github.io/sharehub/documents/{filename}.html`
+- ✅ Published URL displayed
 
 ## Examples
 
 **Publish with extension:**
 ```
-/publish my-article.md
+/kf-claude:publish my-article.md
 ```
 
 **Publish without extension (auto-adds .md):**
 ```
-/publish my-article
+/kf-claude:publish my-article
+```
+
+**Publish from subdirectory:**
+```
+/kf-claude:publish KFE/KF-MIGRATION-CHECKLIST.md
 ```
 
 ## Password Protection (Sharehub Feature)
@@ -98,50 +114,9 @@ access: private
 - **Password**: "maco" (shared password for all private documents)
 - **Session**: Password remembered until browser closed
 
-### Example: Publishing Private Document
+## Troubleshooting
 
-**Frontmatter:**
-```yaml
----
-title: "Claude Dev Users: Multi-User Docker Environment"
-tags:
-  - repository
-  - docker
-  - infrastructure
-access: private
----
-```
-
-**Result:**
-- Document published to sharehub
-- Requires password "maco" to view
-- Listed in index with 🔒 lock icon (after login)
-
-### Index Page Behavior
-
-- **Before login**: Shows only public documents
-- **After login**: Shows all documents (public + private) with 🔒 icons
-
-### Publishing Workflow
-
-1. **Add `access: private` to frontmatter** (if needed)
-2. **Run `/publish filename.md`**
-3. **Script publishes** to sharehub/documents/
-4. **GitHub Pages builds** (~60 seconds)
-5. **Document accessible** with password protection
-
-### Important Notes
-
-- **Default**: Documents are public unless `access: private` is specified
-- **Password**: All private documents use "maco"
-- **No folder restrictions**: Protection is tag-based, not folder-based
-- **Session storage**: Login persists until browser closed
-
-## Quality Checklist
-
-Before publishing, verify:
-- [ ] Note has proper frontmatter (title, tags, date)
-- [ ] Add `access: private` if document contains sensitive information
-- [ ] Images exist in vault at specified paths
-- [ ] Image paths are relative (./images/ or images/)
-- [ ] Note is ready for viewing (public or password-protected)
+- **"Config not found"**: Run `/kf-claude:setup` first
+- **"sharehub_repo not configured"**: Run `/kf-claude:setup` and provide sharehub path
+- **"Sharehub repo not found"**: Clone sharehub or check path in config
+- **"File not found"**: Check filename and ensure you're in vault directory

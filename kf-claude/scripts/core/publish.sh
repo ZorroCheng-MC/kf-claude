@@ -1,13 +1,42 @@
 #!/bin/bash
 # Publish Obsidian note to GitHub Pages (sharehub)
 # Handles image copying and path conversion
-# Usage: ./publish.sh NOTE_FILE
+# Usage: ./publish.sh NOTE_FILE [VAULT_PATH]
 
 set -e  # Exit on error
 
 NOTE_FILE="$1"
-VAULT_PATH="/Users/zorro/Documents/Obsidian/Claudecode"
-SHAREHUB_PATH="/Users/zorro/Dev/sharehub"
+VAULT_PATH="${2:-$(pwd)}"
+
+# Read config from vault
+CONFIG_FILE="$VAULT_PATH/.claude/config.local.json"
+
+if [[ -f "$CONFIG_FILE" ]]; then
+    # Read paths from config
+    SHAREHUB_PATH=$(jq -r '.sharehub_repo // empty' "$CONFIG_FILE" | sed "s|^~|$HOME|")
+    SHAREHUB_URL=$(jq -r '.sharehub_url // empty' "$CONFIG_FILE")
+
+    if [[ -z "$SHAREHUB_PATH" || "$SHAREHUB_PATH" == "null" ]]; then
+        echo "❌ sharehub_repo not configured in .claude/config.local.json"
+        echo "   Run /kf-claude:setup to configure"
+        exit 1
+    fi
+else
+    echo "❌ Config not found: $CONFIG_FILE"
+    echo "   Run /kf-claude:setup first"
+    exit 1
+fi
+
+# Default URL if not in config
+SHAREHUB_URL="${SHAREHUB_URL:-https://zorrocheng-mc.github.io/sharehub}"
+
+# Extract repo name from URL for image path conversion
+REPO_NAME=$(basename "$SHAREHUB_URL")
+
+echo "📂 Vault: $VAULT_PATH"
+echo "📤 Sharehub: $SHAREHUB_PATH"
+echo "🌐 URL: $SHAREHUB_URL"
+echo ""
 
 # Add .md extension if not provided
 if [[ ! "$NOTE_FILE" =~ \.md$ ]]; then
@@ -18,6 +47,13 @@ fi
 if [[ ! -f "$VAULT_PATH/$NOTE_FILE" ]]; then
     echo "❌ Error: File not found: $NOTE_FILE"
     echo "Looking in: $VAULT_PATH/"
+    exit 1
+fi
+
+# Check if sharehub exists
+if [[ ! -d "$SHAREHUB_PATH" ]]; then
+    echo "❌ Sharehub repo not found at: $SHAREHUB_PATH"
+    echo "   Clone it first or update .claude/config.local.json"
     exit 1
 fi
 
@@ -73,28 +109,30 @@ fi
 NOTE_CONTENT=$(cat "$NOTE_FILE")
 
 # Convert image paths for GitHub Pages using Python for reliable regex
-# ./images/file.jpg → /sharehub/images/file.jpg
-# images/file.jpg → /sharehub/images/file.jpg
-CONVERTED_CONTENT=$(echo "$NOTE_CONTENT" | python3 -c '
+# ./images/file.jpg → /$REPO_NAME/images/file.jpg
+# images/file.jpg → /$REPO_NAME/images/file.jpg
+CONVERTED_CONTENT=$(echo "$NOTE_CONTENT" | python3 -c "
 import sys, re
 
 content = sys.stdin.read()
+repo_name = '$REPO_NAME'
 
-# Pattern 1: ./path/to/image.ext -> /sharehub/path/to/image.ext
-content = re.sub(r"!\[([^\]]*)\]\(\./([^)]+\.(jpg|jpeg|png|gif|svg|webp))\)", r"![\1](/sharehub/\2)", content, flags=re.IGNORECASE)
+# Pattern 1: ./path/to/image.ext -> /repo/path/to/image.ext
+content = re.sub(r'!\[([^\]]*)\]\(\./([^)]+\.(jpg|jpeg|png|gif|svg|webp))\)', rf'![\1](/{repo_name}/\2)', content, flags=re.IGNORECASE)
 
-# Pattern 2: path/to/image.ext (no leading ./) -> /sharehub/path/to/image.ext
+# Pattern 2: path/to/image.ext (no leading ./) -> /repo/path/to/image.ext
 # But skip URLs (http:// or https://)
-content = re.sub(r"!\[([^\]]*)\]\((?!https?://|/)([^)]+\.(jpg|jpeg|png|gif|svg|webp))\)", r"![\1](/sharehub/\2)", content, flags=re.IGNORECASE)
+content = re.sub(r'!\[([^\]]*)\]\((?!https?://|/)([^)]+\.(jpg|jpeg|png|gif|svg|webp))\)', rf'![\1](/{repo_name}/\2)', content, flags=re.IGNORECASE)
 
-print(content, end="")
-')
+print(content, end='')
+")
 
 echo "📝 Image path conversion complete"
 echo ""
 
 # Write converted content to sharehub
 DEST_NOTE="$SHAREHUB_PATH/documents/$NOTE_FILE"
+mkdir -p "$SHAREHUB_PATH/documents"
 echo "$CONVERTED_CONTENT" > "$DEST_NOTE"
 
 echo "✅ Copied note to: documents/$NOTE_FILE"
@@ -131,7 +169,7 @@ git push origin main
 echo ""
 echo "✅ Published successfully!"
 echo ""
-echo "📄 Document: https://zorrocheng-mc.github.io/sharehub/documents/${NOTE_FILE%.md}.html"
+echo "📄 Document: $SHAREHUB_URL/documents/${NOTE_FILE%.md}.html"
 echo "⏱️  GitHub Pages will deploy in ~60 seconds"
 echo ""
 
