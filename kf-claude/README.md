@@ -1,4 +1,4 @@
-# Obsidian Vault Manager Plugin
+# KnowledgeFactory for Claude Code Plugin
 
 Manage an AI-powered Obsidian knowledge base with automatic organization and GitHub Pages publishing.
 
@@ -16,7 +16,7 @@ Manage an AI-powered Obsidian knowledge base with automatic organization and Git
 
 1. **Add the plugin marketplace**:
 ```bash
-/plugin marketplace add ZorroCheng-MC/obsidian-vault-manager-plugin
+/plugin marketplace add ZorroCheng-MC/kf-claude-plugin
 ```
 
 2. **Install the plugin**:
@@ -25,13 +25,13 @@ Manage an AI-powered Obsidian knowledge base with automatic organization and Git
 /plugin
 
 # Option B: Install directly
-/plugin install obsidian-vault-manager@ZorroCheng-MC/obsidian-vault-manager-plugin
+/plugin install kf-claude@ZorroCheng-MC/kf-claude-plugin
 ```
 
 3. **Verify installation**:
 ```bash
 /plugin list
-# Should show: obsidian-vault-manager
+# Should show: kf-claude
 ```
 
 ### Manual Installation (Legacy)
@@ -42,10 +42,10 @@ For development or when marketplace is unavailable:
 # Clone to Claude plugins directory
 mkdir -p ~/.claude/plugins
 cd ~/.claude/plugins
-git clone https://github.com/ZorroCheng-MC/obsidian-vault-manager-plugin.git obsidian-vault-manager
+git clone https://github.com/ZorroCheng-MC/kf-claude-plugin.git kf-claude
 
 # Make scripts executable
-chmod +x ~/.claude/plugins/obsidian-vault-manager/scripts/core/*.sh
+chmod +x ~/.claude/plugins/kf-claude/scripts/core/*.sh
 ```
 
 ## Bundled Resources
@@ -100,7 +100,7 @@ Add the following to your `~/.claude/settings.json`:
         "hooks": [
           {
             "type": "command",
-            "command": "python3 ~/.claude/skills/obsidian-vault-manager/scripts/validation/validate-frontmatter.py"
+            "command": "python3 ~/.claude/skills/kf-claude/scripts/validation/validate-frontmatter.py"
           }
         ]
       }
@@ -136,7 +136,7 @@ When configured, the validation hook will:
 
 ```bash
 # Test with a video ID
-~/.claude/skills/obsidian-vault-manager/scripts/core/fetch-youtube-transcript.sh jI2LC3WTryw
+~/.claude/skills/kf-claude/scripts/core/fetch-youtube-transcript.sh jI2LC3WTryw
 ```
 
 ### Test Validation
@@ -154,7 +154,7 @@ type: video
 EOF
 
 # Validate it
-python3 ~/.claude/skills/obsidian-vault-manager/scripts/validation/validate-frontmatter.py test-note.md
+python3 ~/.claude/skills/kf-claude/scripts/validation/validate-frontmatter.py test-note.md
 ```
 
 ## Tag Taxonomy
@@ -179,8 +179,8 @@ python3 ~/.claude/skills/obsidian-vault-manager/scripts/validation/validate-fron
 
 Make scripts executable:
 ```bash
-chmod +x ~/.claude/skills/obsidian-vault-manager/scripts/core/*.sh
-chmod +x ~/.claude/skills/obsidian-vault-manager/scripts/validation/*.py
+chmod +x ~/.claude/skills/kf-claude/scripts/core/*.sh
+chmod +x ~/.claude/skills/kf-claude/scripts/validation/*.py
 ```
 
 ### Transcript Fetching Fails
@@ -205,7 +205,7 @@ pip3 install pyyaml
 ## Structure
 
 ```
-~/.claude/skills/obsidian-vault-manager/
+~/.claude/skills/kf-claude/
 ├── SKILL.md                    # Main skill file with instructions
 ├── README.md                   # This file
 ├── scripts/

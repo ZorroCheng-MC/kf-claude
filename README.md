@@ -1,10 +1,10 @@
-# Obsidian Vault Manager for Claude Code
+# KnowledgeFactory for Claude Code for Claude Code
 
 > **AI-powered knowledge management plugin for Obsidian vaults using Claude Code**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub release](https://img.shields.io/github/v/release/ZorroCheng-MC/obsidian-vault-manager-plugin)](https://github.com/ZorroCheng-MC/obsidian-vault-manager-plugin/releases)
-[![GitHub Actions](https://github.com/ZorroCheng-MC/obsidian-vault-manager-plugin/workflows/Release/badge.svg)](https://github.com/ZorroCheng-MC/obsidian-vault-manager-plugin/actions)
+[![GitHub release](https://img.shields.io/github/v/release/ZorroCheng-MC/kf-claude-plugin)](https://github.com/ZorroCheng-MC/kf-claude-plugin/releases)
+[![GitHub Actions](https://github.com/ZorroCheng-MC/kf-claude-plugin/workflows/Release/badge.svg)](https://github.com/ZorroCheng-MC/kf-claude-plugin/actions)
 
 ## What This Plugin Does
 
@@ -17,7 +17,7 @@ This plugin supercharges your Obsidian vault with AI-powered automation through 
 - 🌐 **GitHub Pages Publishing** - Publish notes to the web with password protection
 - 🎯 **Smart Templates** - Pre-built templates for videos, articles, ideas, and repositories
 
-**[See Full Feature List & Examples →](https://zorrocheng-mc.github.io/sharehub/documents/obsidian-vault-manager-plugin/PLUGIN_FEATURES.html)**
+**[See Full Feature List & Examples →](https://zorrocheng-mc.github.io/sharehub/documents/kf-claude-plugin/PLUGIN_FEATURES.html)**
 
 ---
 
@@ -134,7 +134,7 @@ cd ~/Documents/Obsidian/YourVault
 claude
 
 # Add plugin marketplace
-/plugin marketplace add ZorroCheng-MC/obsidian-vault-manager-plugin
+/plugin marketplace add ZorroCheng-MC/kf-claude-plugin
 ```
 
 ### Step 2: Install the Plugin
@@ -156,7 +156,7 @@ This opens an interactive menu where you can:
 
 ```bash
 # Install directly by specifying marketplace
-/plugin install obsidian-vault-manager@ZorroCheng-MC/obsidian-vault-manager-plugin
+/plugin install kf-claude@ZorroCheng-MC/kf-claude-plugin
 ```
 
 ### Step 3: Verify Installation
@@ -166,7 +166,7 @@ This opens an interactive menu where you can:
 /plugin list
 ```
 
-You should see `obsidian-vault-manager` in the list.
+You should see `kf-claude` in the list.
 
 ---
 
@@ -230,7 +230,7 @@ The setup wizard will:
 | `/bulk-auto-tag` | Bulk AI tagging for existing notes | `/bulk-auto-tag "*.md"` |
 | `/publish` | Publish note to GitHub Pages | `/publish my-note.md` |
 
-**[See detailed command documentation with examples →](https://zorrocheng-mc.github.io/sharehub/documents/obsidian-vault-manager-plugin/PLUGIN_FEATURES.html)**
+**[See detailed command documentation with examples →](https://zorrocheng-mc.github.io/sharehub/documents/kf-claude-plugin/PLUGIN_FEATURES.html)**
 
 ---
 
@@ -285,7 +285,7 @@ The plugin will:
 /semantic-search "notes about productivity workflows"
 ```
 
-**[See More Examples & Command Details →](https://zorrocheng-mc.github.io/sharehub/documents/obsidian-vault-manager-plugin/PLUGIN_FEATURES.html)**
+**[See More Examples & Command Details →](https://zorrocheng-mc.github.io/sharehub/documents/kf-claude-plugin/PLUGIN_FEATURES.html)**
 
 ---
 
@@ -320,10 +320,10 @@ When you run `/capture`, `/youtube-note`, or other commands, Claude Code:
 # Verify marketplace was added
 /plugin marketplace list
 
-# Should show: ZorroCheng-MC/obsidian-vault-manager-plugin
+# Should show: ZorroCheng-MC/kf-claude-plugin
 
 # If not, add it again
-/plugin marketplace add ZorroCheng-MC/obsidian-vault-manager-plugin
+/plugin marketplace add ZorroCheng-MC/kf-claude-plugin
 ```
 
 ### Commands not working
@@ -348,9 +348,9 @@ claude
 ### Need help?
 
 - **Complete Setup Guide**: [KnowledgeFactory Quick Setup Cheatsheet](https://zorrocheng-mc.github.io/sharehub/documents/KnowledgeFactory/KnowledgeFactory-Quick-Setup-Cheatsheet.html)
-- **Command Documentation**: [PLUGIN_FEATURES.html](https://zorrocheng-mc.github.io/sharehub/documents/obsidian-vault-manager-plugin/PLUGIN_FEATURES.html)
+- **Command Documentation**: [PLUGIN_FEATURES.html](https://zorrocheng-mc.github.io/sharehub/documents/kf-claude-plugin/PLUGIN_FEATURES.html)
 - **Developer Guide**: [DEVELOPER.md](DEVELOPER.md)
-- **Open an Issue**: [github.com/ZorroCheng-MC/obsidian-vault-manager-plugin/issues](https://github.com/ZorroCheng-MC/obsidian-vault-manager-plugin/issues)
+- **Open an Issue**: [github.com/ZorroCheng-MC/kf-claude-plugin/issues](https://github.com/ZorroCheng-MC/kf-claude-plugin/issues)
 
 ---
 
@@ -370,7 +370,7 @@ This repository serves as a **reference implementation** for building Claude Cod
 
 ## Contributing & Support
 
-**Found a bug?** [Open an issue](https://github.com/ZorroCheng-MC/obsidian-vault-manager-plugin/issues)
+**Found a bug?** [Open an issue](https://github.com/ZorroCheng-MC/kf-claude-plugin/issues)
 
 **Want to contribute?** PRs welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
 
