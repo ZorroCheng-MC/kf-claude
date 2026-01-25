@@ -35,6 +35,7 @@ allowed-tools:
   - mcp__MCP_DOCKER__get-library-docs
   - mcp__MCP_DOCKER__perplexity_ask
   - mcp__MCP_DOCKER__perplexity_research
+  - SlashCommand(/gitingest)
 ---
 
 ## Task
@@ -57,6 +58,36 @@ Analyze the input and process according to content type. **Check patterns in thi
 | 5 | **Plain Text** | No URL pattern | Idea note |
 
 **IMPORTANT**: A URL like `https://example.com/page?y=VIDEO_ID` is a **Web Article + Video** (Priority 3), NOT a YouTube video. The `?y=` param indicates an embedded video to include in the study guide.
+
+---
+
+## GitHub Repository Processing (Priority 2)
+
+**When a GitHub URL is detected (`github.com`):**
+
+1. **Extract GitHub URL** from `$ARGUMENTS`
+2. **Call `/gitingest` command** using `SlashCommand` tool:
+   ```
+   SlashCommand("/gitingest https://github.com/owner/repo")
+   ```
+3. **The `/gitingest` command will:**
+   - Use MCP Docker GitHub tools (`get_file_contents`, `list_commits`)
+   - Analyze repository structure and contents
+   - Generate comprehensive markdown with proper tagging
+   - Auto-save to vault
+
+**DO NOT:**
+- ❌ Manually analyze GitHub repos in capture.md
+- ❌ Try to create repo notes without /gitingest
+
+**Example Flow:**
+```
+User: /kf-claude:capture https://github.com/anthropics/claude-code
+
+→ Detect: GitHub URL
+→ Execute: SlashCommand("/gitingest https://github.com/anthropics/claude-code")
+→ Result: Complete repository analysis saved to Obsidian
+```
 
 ---
 
