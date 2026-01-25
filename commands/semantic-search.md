@@ -1,5 +1,5 @@
 ---
-description: Perform semantic search in Obsidian vault using Smart Connections via Local REST API
+description: Search Obsidian vault using Local REST API
 argument-hint: [search query] (e.g., "KnowledgeFactory migration")
 allowed-tools:
   - Bash(*)
@@ -8,25 +8,30 @@ allowed-tools:
 ## Context
 
 - **Search Query:** `$ARGUMENTS`
-- **API Configuration:** Local REST API running on https://127.0.0.1:27124/
-- **Smart Connections Endpoint:** `/search/smart`
+- **API:** Obsidian Local REST API on https://127.0.0.1:27124/
 
 ## Task
 
-Execute a semantic search in the Obsidian vault using the Smart Connections plugin.
+Search the Obsidian vault for notes matching the query.
 
 ## Implementation
 
-### Step 1: Get API Key from Obsidian Plugin Config
-
 ```bash
-# Read API key from Obsidian Local REST API plugin config
 VAULT_PATH="${VAULT_PATH:-$(pwd)}"
+QUERY="$ARGUMENTS"
+
+if [[ -z "$QUERY" ]]; then
+    echo "❌ No search query provided"
+    echo "   Usage: /kf-claude:semantic-search <query>"
+    exit 1
+fi
+
+# Read API key from Obsidian plugin config
 API_CONFIG="$VAULT_PATH/.obsidian/plugins/obsidian-local-rest-api/data.json"
 
 if [[ ! -f "$API_CONFIG" ]]; then
     echo "❌ Local REST API plugin not configured"
-    echo "   Install and enable 'Local REST API' plugin in Obsidian"
+    echo "   Install 'Local REST API' plugin in Obsidian"
     exit 1
 fi
 
@@ -36,63 +41,70 @@ if [[ -z "$API_KEY" ]]; then
     echo "❌ API key not found in plugin config"
     exit 1
 fi
-```
-
-### Step 2: Execute Semantic Search
-
-```bash
-QUERY="$ARGUMENTS"
-
-if [[ -z "$QUERY" ]]; then
-    echo "❌ No search query provided"
-    echo "   Usage: /kf-claude:semantic-search <query>"
-    exit 1
-fi
 
 echo "🔍 Searching for: $QUERY"
 echo ""
 
-curl -k -s -X POST \
-  https://127.0.0.1:27124/search/smart \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{\"query\": \"$QUERY\", \"filter\": {\"limit\": 10}}" | jq -r '
-    if type == "array" then
-      .[] | "📄 \(.path)\n   Score: \(.score | tostring | .[0:5])\n"
-    else
-      "❌ Error: \(.message // "Unknown error")"
-    end
-  '
+# URL encode the query
+ENCODED_QUERY=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$QUERY'))")
+
+# Simple text search
+RESULT=$(curl -k -s -X POST \
+  "https://127.0.0.1:27124/search/simple/?query=$ENCODED_QUERY&contextLength=100" \
+  -H "Authorization: Bearer $API_KEY" 2>/dev/null)
+
+# Check for errors
+if echo "$RESULT" | jq -e '.error or .message' >/dev/null 2>&1; then
+    ERROR=$(echo "$RESULT" | jq -r '.error // .message')
+    echo "❌ Error: $ERROR"
+    exit 1
+fi
+
+# Format and display results
+echo "$RESULT" | jq -r '
+  if length == 0 then
+    "No results found."
+  else
+    .[:10] | to_entries | .[] |
+    "📄 \(.value.filename)\n   Matches: \(.value.matches | length)\n"
+  end
+'
 ```
 
 ## Prerequisites
 
 1. **Obsidian** must be running
 2. **Local REST API** plugin installed and enabled
-3. **Smart Connections** plugin installed with embeddings generated
 
 ## Example
 
 ```bash
-/kf-claude:semantic-search KnowledgeFactory migration
+/kf-claude:semantic-search KnowledgeFactory
 ```
 
 Output:
 ```
-🔍 Searching for: KnowledgeFactory migration
+🔍 Searching for: KnowledgeFactory
 
 📄 KFE/KF-MIGRATION-CHECKLIST.md
-   Score: 0.892
+   Matches: 15
 
 📄 KFE/KF-MASTER-PLAN.md
-   Score: 0.856
+   Matches: 12
 
-📄 KFE/KF-GITHUB-STRUCTURE.md
-   Score: 0.823
+📄 KnowledgeFactory/README.md
+   Matches: 8
 ```
+
+## Search Types
+
+| Type | Endpoint | Description |
+|------|----------|-------------|
+| Simple | `/search/simple/` | Text search across vault |
+| Advanced | `/search/` | Dataview DQL or JsonLogic |
 
 ## Troubleshooting
 
-- **"Connection refused"**: Obsidian is not running or plugin disabled
-- **"Authorization required"**: API key mismatch (restart Obsidian)
-- **Empty results**: Smart Connections embeddings not generated yet
+- **"Connection refused"**: Obsidian is not running
+- **"Authorization required"**: Check API key in plugin settings
+- **"No results"**: Try different keywords
