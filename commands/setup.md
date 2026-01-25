@@ -20,9 +20,17 @@ Run the setup wizard to configure KnowledgeFactory for this vault.
 ## Step 1: Verify Environment
 
 ```bash
+echo "🔧 KnowledgeFactory Setup Wizard"
+echo "================================"
+echo ""
+
+VAULT_PATH="$(pwd)"
+
 # Check we're in an Obsidian vault
 if [[ ! -d ".obsidian" ]]; then
     echo "⚠️  Warning: No .obsidian folder found. Are you in an Obsidian vault?"
+    echo "   Current directory: $VAULT_PATH"
+    echo ""
 fi
 
 # Check plugin is installed
@@ -34,37 +42,97 @@ if [[ ! -d "$PLUGIN_DIR" ]]; then
 fi
 
 echo "✅ kf-claude plugin found"
-echo "📂 Vault path: $PWD"
+echo "📂 Vault path: $VAULT_PATH"
+echo ""
 ```
 
 ## Step 2: Check Dependencies
 
-Verify required tools are available:
-
 ```bash
-echo "Checking dependencies..."
+echo "📦 Checking dependencies..."
+echo ""
 
 # Required
-command -v git >/dev/null && echo "✅ git" || echo "❌ git (required)"
+command -v git >/dev/null && echo "✅ git" || echo "❌ git (required - brew install git)"
 command -v python3 >/dev/null && echo "✅ python3" || echo "❌ python3 (required)"
+command -v jq >/dev/null && echo "✅ jq" || echo "❌ jq (required - brew install jq)"
 
 # Optional but recommended
-command -v jq >/dev/null && echo "✅ jq" || echo "⚠️  jq (optional, install: brew install jq)"
-command -v uvx >/dev/null && echo "✅ uvx" || echo "⚠️  uvx (optional, for YouTube transcripts: brew install uv)"
+command -v uvx >/dev/null && echo "✅ uvx (YouTube transcripts)" || echo "⚠️  uvx (optional - brew install uv)"
+
+echo ""
 ```
 
-## Step 3: Create Vault Configuration
-
-Create `.claude/config.local.json` with vault-specific settings:
+## Step 3: Check Obsidian Plugins
 
 ```bash
+echo "🔌 Checking Obsidian plugins..."
+echo ""
+
+# Local REST API
+REST_API_CONFIG=".obsidian/plugins/obsidian-local-rest-api/data.json"
+if [[ -f "$REST_API_CONFIG" ]]; then
+    API_KEY=$(jq -r '.apiKey // empty' "$REST_API_CONFIG")
+    if [[ -n "$API_KEY" ]]; then
+        echo "✅ Local REST API configured (key: ${API_KEY:0:8}...)"
+    else
+        echo "⚠️  Local REST API plugin found but no API key"
+    fi
+else
+    echo "⚠️  Local REST API not configured"
+    echo "   Required for: /kf-claude:semantic-search"
+    echo "   Install from Obsidian Community Plugins"
+fi
+
+# Smart Connections
+if [[ -d ".obsidian/plugins/smart-connections" ]]; then
+    echo "✅ Smart Connections installed"
+else
+    echo "⚠️  Smart Connections not found"
+    echo "   Required for: /kf-claude:semantic-search"
+fi
+
+echo ""
+```
+
+## Step 4: Check Sharehub Configuration
+
+```bash
+echo "📤 Checking publishing setup..."
+echo ""
+
+# Check if sharehub exists
+SHAREHUB_PATH="$HOME/Dev/sharehub"
+if [[ -d "$SHAREHUB_PATH" ]]; then
+    echo "✅ Sharehub repo found at: $SHAREHUB_PATH"
+
+    # Check if it's a git repo
+    if [[ -d "$SHAREHUB_PATH/.git" ]]; then
+        REMOTE=$(cd "$SHAREHUB_PATH" && git remote get-url origin 2>/dev/null || echo "none")
+        echo "   Remote: $REMOTE"
+    fi
+else
+    echo "⚠️  Sharehub not found at: $SHAREHUB_PATH"
+    echo "   Required for: /kf-claude:publish"
+    echo "   Clone with: git clone https://github.com/ZorroCheng-MC/sharehub.git ~/Dev/sharehub"
+fi
+
+echo ""
+```
+
+## Step 5: Create Vault Configuration
+
+```bash
+echo "⚙️  Creating configuration..."
+echo ""
+
 mkdir -p .claude
 
 # Create config if not exists
 if [[ ! -f ".claude/config.local.json" ]]; then
-    cat > .claude/config.local.json << 'EOF'
+    cat > .claude/config.local.json << EOF
 {
-  "vault_path": "$PWD",
+  "vault_path": "$VAULT_PATH",
   "sharehub_url": "https://zorrocheng-mc.github.io/sharehub",
   "sharehub_repo": "~/Dev/sharehub",
   "enable_short_commands": false
@@ -76,12 +144,11 @@ else
 fi
 ```
 
-## Step 4: Enable Short Commands (Optional)
-
-If `--enable-short-commands` is passed, copy commands to vault for direct access:
+## Step 6: Enable Short Commands (Optional)
 
 ```bash
 if [[ "$ARGUMENTS" == *"--enable-short-commands"* ]]; then
+    echo ""
     echo "📝 Enabling short commands..."
 
     PLUGIN_COMMANDS="$HOME/.claude/plugins/marketplaces/kf-claude/commands"
@@ -89,50 +156,55 @@ if [[ "$ARGUMENTS" == *"--enable-short-commands"* ]]; then
 
     mkdir -p "$VAULT_COMMANDS"
 
-    # Copy each command (creates local copies for /capture instead of /kf-claude:capture)
+    # Copy each command
     for cmd in capture.md youtube-note.md idea.md gitingest.md study-guide.md publish.md semantic-search.md share.md; do
         if [[ -f "$PLUGIN_COMMANDS/$cmd" ]]; then
             cp "$PLUGIN_COMMANDS/$cmd" "$VAULT_COMMANDS/$cmd"
-            echo "  ✅ /$cmd enabled"
+            echo "  ✅ /${cmd%.md}"
         fi
     done
+
+    # Update config
+    jq '.enable_short_commands = true' .claude/config.local.json > .claude/config.local.json.tmp
+    mv .claude/config.local.json.tmp .claude/config.local.json
 
     echo ""
     echo "✅ Short commands enabled!"
     echo "   You can now use /capture instead of /kf-claude:capture"
 else
     echo ""
-    echo "ℹ️  Short commands not enabled."
-    echo "   Use /kf-claude:capture, /kf-claude:idea, etc."
-    echo "   To enable short commands, run: /kf-claude:setup --enable-short-commands"
+    echo "ℹ️  Using plugin-prefixed commands (default)"
+    echo "   Example: /kf-claude:capture, /kf-claude:idea"
+    echo ""
+    echo "   To enable short commands, run:"
+    echo "   /kf-claude:setup --enable-short-commands"
 fi
 ```
 
-## Step 5: Summary
+## Step 7: Summary
 
-Display setup summary:
-
-```
-🎉 KnowledgeFactory Setup Complete!
-
-Plugin: kf-claude v1.0.0
-Vault: $PWD
-
-Available Commands:
-  /kf-claude:capture      - Universal content capture
-  /kf-claude:youtube-note - YouTube video with transcript
-  /kf-claude:idea         - Quick idea capture
-  /kf-claude:gitingest    - GitHub repository analysis
-  /kf-claude:study-guide  - Generate study materials
-  /kf-claude:publish      - Publish to GitHub Pages
-  /kf-claude:share        - Generate shareable URL
-  /kf-claude:semantic-search - Search vault by meaning
-
-Configuration:
-  ~/.claude/plugins/marketplaces/kf-claude/  (plugin)
-  .claude/config.local.json                   (vault config)
-
-Need help? https://github.com/ZorroCheng-MC/kf-claude
+```bash
+echo ""
+echo "========================================"
+echo "🎉 KnowledgeFactory Setup Complete!"
+echo "========================================"
+echo ""
+echo "Available Commands:"
+echo "  /kf-claude:capture        - Universal content capture"
+echo "  /kf-claude:youtube-note   - YouTube video with transcript"
+echo "  /kf-claude:idea           - Quick idea capture"
+echo "  /kf-claude:gitingest      - GitHub repository analysis"
+echo "  /kf-claude:study-guide    - Generate study materials"
+echo "  /kf-claude:publish        - Publish to GitHub Pages"
+echo "  /kf-claude:share          - Generate shareable URL"
+echo "  /kf-claude:semantic-search - Search vault by meaning"
+echo ""
+echo "Configuration Files:"
+echo "  ~/.claude/plugins/marketplaces/kf-claude/  (plugin)"
+echo "  .claude/config.local.json                   (vault config)"
+echo ""
+echo "Need help? https://github.com/ZorroCheng-MC/kf-claude"
+echo ""
 ```
 
 ## Re-running Setup
@@ -140,4 +212,4 @@ Need help? https://github.com/ZorroCheng-MC/kf-claude
 Run `/kf-claude:setup` again to:
 - Update configuration
 - Enable/disable short commands
-- Check dependencies
+- Check dependencies and plugins
