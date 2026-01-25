@@ -4,7 +4,9 @@ argument-hint: [content-source] (file path, URL, or direct text to create study 
 allowed-tools:
   - Bash(*)
   - Read(*)
-  - mcp__fetch__fetch
+  - WebFetch
+  - mcp__MCP_DOCKER__fetch
+  - mcp__MCP_DOCKER__firecrawl_scrape
   - mcp__MCP_DOCKER__obsidian_*
 ---
 
@@ -20,14 +22,17 @@ Create a study guide note directly using MCP tools.
 
 ## Process
 
-The skill will:
-1. Fetch content from URL, file, or direct text
-2. Apply bundled template: `templates/study-guide-template.md`
-3. Analyze content complexity, topics, and learning requirements
-4. Apply AI-powered smart tagging (using tag taxonomy)
-5. Generate structured learning plan with objectives and assessments
-6. Substitute all template variables with analyzed data
-7. Create note in vault using MCP Obsidian tools
+1. Get today's date: `date "+%Y-%m-%d"`
+2. Fetch content from URL (using `WebFetch` or `mcp__MCP_DOCKER__fetch`), file, or direct text
+3. **Read template FIRST**:
+   ```bash
+   cat ~/.claude/plugins/marketplaces/kf-claude/kf-claude/templates/study-guide-template.md
+   ```
+4. Analyze content complexity, topics, and learning requirements
+5. Apply AI-powered smart tagging (using tag taxonomy)
+6. Generate structured learning plan with objectives and assessments
+7. Replace all `{{PLACEHOLDER}}` with actual values
+8. Create note with `mcp__MCP_DOCKER__obsidian_append_content`
 
 ## Tag Taxonomy Reference
 

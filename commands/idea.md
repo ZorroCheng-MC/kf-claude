@@ -18,13 +18,16 @@ Create an idea note directly using MCP tools.
 
 ## Process
 
-The skill will:
-1. Analyze idea content and determine main concepts
-2. Apply bundled template: `templates/idea-template.md`
-3. Analyze content and apply AI-powered smart tagging (using tag taxonomy)
-4. Generate smart filename: `{date}-{3-5-word-idea-name}.md`
-5. Substitute all template variables with analyzed data
-6. Create note in vault using MCP Obsidian tools
+1. Get today's date: `date "+%Y-%m-%d"`
+2. Analyze idea content and determine main concepts
+3. **Read template FIRST**:
+   ```bash
+   cat ~/.claude/plugins/marketplaces/kf-claude/kf-claude/templates/idea-template.md
+   ```
+4. Apply AI-powered smart tagging (using tag taxonomy)
+5. Generate smart filename: `{date}-{3-5-word-idea-name}.md`
+6. Replace all `{{PLACEHOLDER}}` with actual values
+7. Create note with `mcp__MCP_DOCKER__obsidian_append_content`
 
 ## Tag Taxonomy Reference
 
