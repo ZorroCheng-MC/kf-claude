@@ -32,7 +32,11 @@
         "./commands/idea.md",
         "./commands/study-guide.md",
         "./commands/publish.md",
-        "./commands/gitingest.md"
+        "./commands/gitingest.md",
+        "./commands/bulk-auto-tag.md",
+        "./commands/process-inbox.md",
+        "./commands/semantic-search.md",
+        "./commands/setup.md"
       ]
     }
   ]
