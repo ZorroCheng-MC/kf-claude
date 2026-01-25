@@ -95,26 +95,69 @@ fi
 echo ""
 ```
 
-## Step 4: Check Sharehub Configuration
+## Step 4: Configure Sharehub (Publishing)
 
 ```bash
-echo "📤 Checking publishing setup..."
+echo "📤 Configuring publishing setup..."
 echo ""
 
-# Check if sharehub exists
-SHAREHUB_PATH="$HOME/Dev/sharehub"
-if [[ -d "$SHAREHUB_PATH" ]]; then
-    echo "✅ Sharehub repo found at: $SHAREHUB_PATH"
+# Check existing config
+EXISTING_SHAREHUB=""
+if [[ -f ".claude/config.local.json" ]]; then
+    EXISTING_SHAREHUB=$(jq -r '.sharehub_repo // empty' .claude/config.local.json | sed "s|^~|$HOME|")
+fi
 
-    # Check if it's a git repo
-    if [[ -d "$SHAREHUB_PATH/.git" ]]; then
-        REMOTE=$(cd "$SHAREHUB_PATH" && git remote get-url origin 2>/dev/null || echo "none")
-        echo "   Remote: $REMOTE"
+# Default paths to check
+DEFAULT_PATHS=(
+    "$EXISTING_SHAREHUB"
+    "$HOME/Dev/sharehub"
+    "$HOME/sharehub"
+    "$HOME/Documents/sharehub"
+)
+
+SHAREHUB_PATH=""
+for path in "${DEFAULT_PATHS[@]}"; do
+    if [[ -n "$path" && -d "$path" && -d "$path/.git" ]]; then
+        SHAREHUB_PATH="$path"
+        break
+    fi
+done
+
+if [[ -n "$SHAREHUB_PATH" ]]; then
+    echo "✅ Sharehub repo found at: $SHAREHUB_PATH"
+    REMOTE=$(cd "$SHAREHUB_PATH" && git remote get-url origin 2>/dev/null || echo "none")
+    echo "   Remote: $REMOTE"
+
+    # Extract GitHub Pages URL from remote
+    if [[ "$REMOTE" =~ github.com[:/]([^/]+)/([^/.]+) ]]; then
+        OWNER="${BASH_REMATCH[1]}"
+        REPO="${BASH_REMATCH[2]}"
+        SHAREHUB_URL="https://${OWNER}.github.io/${REPO}"
+        echo "   Pages URL: $SHAREHUB_URL"
     fi
 else
-    echo "⚠️  Sharehub not found at: $SHAREHUB_PATH"
-    echo "   Required for: /kf-claude:publish"
-    echo "   Clone with: git clone https://github.com/ZorroCheng-MC/sharehub.git ~/Dev/sharehub"
+    echo "⚠️  Sharehub repo not found in common locations"
+    echo ""
+    echo "   Please provide your sharehub repo path:"
+    echo "   (or press Enter to skip publishing setup)"
+    echo ""
+    read -p "   Sharehub path: " USER_SHAREHUB_PATH
+
+    if [[ -n "$USER_SHAREHUB_PATH" ]]; then
+        # Expand ~ to $HOME
+        USER_SHAREHUB_PATH="${USER_SHAREHUB_PATH/#\~/$HOME}"
+
+        if [[ -d "$USER_SHAREHUB_PATH" ]]; then
+            SHAREHUB_PATH="$USER_SHAREHUB_PATH"
+            echo "   ✅ Using: $SHAREHUB_PATH"
+        else
+            echo "   ⚠️  Path not found: $USER_SHAREHUB_PATH"
+            echo "   Skipping sharehub configuration"
+        fi
+    else
+        echo "   ℹ️  Skipping sharehub configuration"
+        echo "   You can set it later in .claude/config.local.json"
+    fi
 fi
 
 echo ""
@@ -128,20 +171,27 @@ echo ""
 
 mkdir -p .claude
 
-# Create config if not exists
-if [[ ! -f ".claude/config.local.json" ]]; then
-    cat > .claude/config.local.json << EOF
+# Set defaults if not discovered
+SHAREHUB_URL="${SHAREHUB_URL:-https://zorrocheng-mc.github.io/sharehub}"
+SHAREHUB_PATH="${SHAREHUB_PATH:-}"
+
+# Convert to ~ notation for config
+SHAREHUB_PATH_CONFIG="${SHAREHUB_PATH/#$HOME/~}"
+
+# Create or update config
+cat > .claude/config.local.json << EOF
 {
   "vault_path": "$VAULT_PATH",
-  "sharehub_url": "https://zorrocheng-mc.github.io/sharehub",
-  "sharehub_repo": "~/Dev/sharehub",
+  "sharehub_url": "$SHAREHUB_URL",
+  "sharehub_repo": "$SHAREHUB_PATH_CONFIG",
   "enable_short_commands": false
 }
 EOF
-    echo "✅ Created .claude/config.local.json"
-else
-    echo "ℹ️  .claude/config.local.json already exists"
-fi
+
+echo "✅ Created .claude/config.local.json"
+echo "   vault_path: $VAULT_PATH"
+echo "   sharehub_url: $SHAREHUB_URL"
+echo "   sharehub_repo: $SHAREHUB_PATH_CONFIG"
 ```
 
 ## Step 6: Enable Short Commands (Optional)
