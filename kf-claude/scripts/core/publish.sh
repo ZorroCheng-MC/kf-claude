@@ -181,8 +181,8 @@ echo "⏳ Waiting for GitHub Pages deployment..."
 # Build the published URL
 PUBLISHED_URL="$SHAREHUB_URL/documents/${NOTE_FILE%.md}.html"
 
-# Verify page is reachable (retry up to 12 times = 60 seconds)
-MAX_RETRIES=12
+# Verify page is reachable (retry up to 18 times = 90 seconds)
+MAX_RETRIES=18
 RETRY_DELAY=5
 RETRY_COUNT=0
 
