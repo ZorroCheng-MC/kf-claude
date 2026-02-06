@@ -2,97 +2,62 @@
 description: Share note via URL-encoded link (Plannotator-style, no server storage)
 argument-hint: [filename] (note to share, e.g., my-note.md)
 allowed-tools:
-  - Bash(*)
-  - Read
+  - Task(*)
 ---
 
 ## Task
 
-Generate a shareable URL for a note using Base64 + zlib compression (Plannotator-compatible format).
+Generate a shareable URL for a note using Base64 + zlib compression.
 
 **Input**: `$ARGUMENTS` (filename with or without .md extension)
-**Output**: Shareable URL that can be opened by anyone
 
 ## Implementation
 
-### Step 1: Read the Note
+**IMPORTANT: Always spawn an agent for this task.**
 
-```bash
-VAULT_PATH="/Users/zorro/Documents/Obsidian/Claudecode"
-FILENAME="$ARGUMENTS"
+Use the Task tool with these exact parameters:
 
-# Add .md extension if missing
-if [[ ! "$FILENAME" =~ \.md$ ]]; then
-    FILENAME="${FILENAME}.md"
-fi
-
-NOTE_PATH="$VAULT_PATH/$FILENAME"
 ```
+Task tool call:
+  subagent_type: "general-purpose"
+  description: "Generate shareable URL"
+  prompt: |
+    Generate a shareable URL for the note "$ARGUMENTS".
 
-Read the note content using the Read tool.
+    Steps:
+    1. Read the note file from /Users/zorro/Documents/Obsidian/Claudecode/$ARGUMENTS
+       (add .md extension if missing)
 
-### Step 2: Generate Shareable URL
+    2. Run this Python script to generate the URL:
+    ```bash
+    python3 << 'PYTHON_SCRIPT'
+    import json
+    import zlib
+    import base64
+    import subprocess
 
-Use Python to compress and encode:
+    content = '''<NOTE_CONTENT_HERE>'''
 
-```bash
-python3 << 'PYTHON_SCRIPT'
-import sys
-import json
-import zlib
-import base64
+    # Create Plannotator-compatible structure
+    data = {"p": content, "a": []}
 
-# Read content from stdin or file
-content = """$NOTE_CONTENT"""
+    # Compress and encode
+    json_str = json.dumps(data, ensure_ascii=False)
+    compressed = zlib.compress(json_str.encode('utf-8'))
+    encoded = base64.urlsafe_b64encode(compressed).decode('utf-8')
 
-# Create Plannotator-compatible structure
-data = {
-    "p": content,  # Plan/content
-    "a": []        # Annotations (empty initially)
-}
+    # Generate URL with custom domain
+    url = f"https://sharehub.zorro.hk/share#{encoded}"
+    print(url)
 
-# Compress with zlib
-json_str = json.dumps(data, ensure_ascii=False)
-compressed = zlib.compress(json_str.encode('utf-8'))
-
-# Base64 URL-safe encode
-encoded = base64.urlsafe_b64encode(compressed).decode('utf-8')
-
-# Generate URL
-url = f"https://zorrocheng-mc.github.io/sharehub/share#{encoded}"
-
-print(f"\n📤 **Shareable URL:**\n")
-print(f"```\n{url}\n```")
-print(f"\n📋 URL copied to clipboard (if pbcopy available)")
-
-# Try to copy to clipboard
-import subprocess
-try:
+    # Copy to clipboard
     subprocess.run(['pbcopy'], input=url.encode(), check=True)
-except:
-    pass
-PYTHON_SCRIPT
-```
+    PYTHON_SCRIPT
+    ```
 
-### Step 3: Output Result
+    3. Return the shareable URL and confirm it was copied to clipboard.
 
-Display:
-- The shareable URL
-- Instructions for the recipient
-- Note about URL length (warn if very long)
-
-## URL Structure
-
-```
-https://zorrocheng-mc.github.io/sharehub/share#<compressed-base64>
-```
-
-The data structure matches Plannotator:
-```json
-{
-  "p": "# Note content...",
-  "a": [["C", "section", "comment", "session-id", null]]
-}
+    If the note is very large (>10KB), warn that some platforms may truncate the URL.
 ```
 
 ## Features
@@ -102,19 +67,11 @@ The data structure matches Plannotator:
 - **Annotations**: Recipients can add comments and re-share
 - **Compatible**: Same format as Plannotator
 
-## Example
+## Examples
 
 ```
-/share my-note.md
-```
-
-Output:
-```
-📤 Shareable URL:
-
-https://zorrocheng-mc.github.io/sharehub/share#eJxLTEoGAAJYAUI=
-
-📋 URL copied to clipboard
+/kf-claude:share my-note.md
+/kf-claude:share paydollar-test-plan
 ```
 
 ## Limitations
