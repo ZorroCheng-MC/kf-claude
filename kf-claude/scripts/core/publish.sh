@@ -28,10 +28,18 @@ else
 fi
 
 # Default URL if not in config
-SHAREHUB_URL="${SHAREHUB_URL:-https://zorrocheng-mc.github.io/sharehub}"
+SHAREHUB_URL="${SHAREHUB_URL:-https://sharehub.zorro.hk}"
 
-# Extract repo name from URL for image path conversion
-REPO_NAME=$(basename "$SHAREHUB_URL")
+# Check if using custom domain (no path prefix needed) or GitHub Pages subdirectory
+if [[ "$SHAREHUB_URL" =~ github\.io/([^/]+) ]]; then
+    # GitHub Pages: extract repo name for path prefix
+    REPO_NAME="${BASH_REMATCH[1]}"
+    IMAGE_PREFIX="/$REPO_NAME"
+else
+    # Custom domain: images at root
+    REPO_NAME=""
+    IMAGE_PREFIX=""
+fi
 
 echo "📂 Vault: $VAULT_PATH"
 echo "📤 Sharehub: $SHAREHUB_PATH"
@@ -109,20 +117,20 @@ fi
 NOTE_CONTENT=$(cat "$NOTE_FILE")
 
 # Convert image paths for GitHub Pages using Python for reliable regex
-# ./images/file.jpg → /$REPO_NAME/images/file.jpg
-# images/file.jpg → /$REPO_NAME/images/file.jpg
+# Custom domain: ./images/file.jpg → /images/file.jpg
+# GitHub Pages: ./images/file.jpg → /repo/images/file.jpg
 CONVERTED_CONTENT=$(echo "$NOTE_CONTENT" | python3 -c "
 import sys, re
 
 content = sys.stdin.read()
-repo_name = '$REPO_NAME'
+image_prefix = '$IMAGE_PREFIX'
 
-# Pattern 1: ./path/to/image.ext -> /repo/path/to/image.ext
-content = re.sub(r'!\[([^\]]*)\]\(\./([^)]+\.(jpg|jpeg|png|gif|svg|webp))\)', rf'![\1](/{repo_name}/\2)', content, flags=re.IGNORECASE)
+# Pattern 1: ./path/to/image.ext -> /prefix/path/to/image.ext (or /path if no prefix)
+content = re.sub(r'!\[([^\]]*)\]\(\./([^)]+\.(jpg|jpeg|png|gif|svg|webp))\)', rf'![\1]({image_prefix}/\2)', content, flags=re.IGNORECASE)
 
-# Pattern 2: path/to/image.ext (no leading ./) -> /repo/path/to/image.ext
+# Pattern 2: path/to/image.ext (no leading ./) -> /prefix/path/to/image.ext
 # But skip URLs (http:// or https://)
-content = re.sub(r'!\[([^\]]*)\]\((?!https?://|/)([^)]+\.(jpg|jpeg|png|gif|svg|webp))\)', rf'![\1](/{repo_name}/\2)', content, flags=re.IGNORECASE)
+content = re.sub(r'!\[([^\]]*)\]\((?!https?://|/)([^)]+\.(jpg|jpeg|png|gif|svg|webp))\)', rf'![\1]({image_prefix}/\2)', content, flags=re.IGNORECASE)
 
 print(content, end='')
 ")
@@ -168,10 +176,41 @@ echo "🚀 Pushing to GitHub..."
 git push origin main
 
 echo ""
-echo "✅ Published successfully!"
+echo "⏳ Waiting for GitHub Pages deployment..."
+
+# Build the published URL
+PUBLISHED_URL="$SHAREHUB_URL/documents/${NOTE_FILE%.md}.html"
+
+# Verify page is reachable (retry up to 12 times = 60 seconds)
+MAX_RETRIES=12
+RETRY_DELAY=5
+RETRY_COUNT=0
+
+while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+
+    # Check if page is reachable (HTTP 200)
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PUBLISHED_URL" 2>/dev/null || echo "000")
+
+    if [[ "$HTTP_STATUS" == "200" ]]; then
+        echo ""
+        echo "✅ Published successfully!"
+        echo ""
+        echo "📄 URL: $PUBLISHED_URL"
+        echo ""
+        exit 0
+    fi
+
+    echo "  Attempt $RETRY_COUNT/$MAX_RETRIES - Status: $HTTP_STATUS (waiting ${RETRY_DELAY}s...)"
+    sleep $RETRY_DELAY
+done
+
+# If we get here, page wasn't reachable after all retries
 echo ""
-echo "📄 Document: $SHAREHUB_URL/documents/${NOTE_FILE%.md}.html"
-echo "⏱️  GitHub Pages will deploy in ~60 seconds"
+echo "⚠️  Published but page not yet reachable (GitHub Pages may still be deploying)"
+echo ""
+echo "📄 URL: $PUBLISHED_URL"
+echo "⏱️  Check again in a minute"
 echo ""
 
 exit 0

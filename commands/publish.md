@@ -4,48 +4,55 @@ argument-hint: [filename] (note to publish, e.g., my-article.md)
 allowed-tools:
   - Bash(*)
   - Read(*)
+  - Task(*)
+  - WebFetch(*)
 ---
 
 ## Task
 
-Publish note to GitHub Pages using the bundled publish script.
+Publish note to GitHub Pages using the publish agent.
 
 **Input**: `$ARGUMENTS` (filename with or without .md extension)
-**Operation**: Publish to GitHub Pages with image handling
-
-## Prerequisites
-
-Run `/kf-claude:setup` first to configure:
-- `sharehub_repo` - Path to your sharehub repository
-- `sharehub_url` - Your GitHub Pages URL
+**Operation**: Publish to GitHub Pages with image handling and deployment verification
 
 ## Implementation
 
-Run the bundled publish script:
+Spawn a publish agent to handle the workflow:
 
-```bash
-PLUGIN_DIR="$HOME/.claude/plugins/marketplaces/kf-claude/kf-claude"
-VAULT_PATH="$(pwd)"
+```
+Use the Task tool with subagent_type="general-purpose" to:
 
-# Check config exists
-if [[ ! -f ".claude/config.local.json" ]]; then
-    echo "❌ Config not found. Run /kf-claude:setup first"
-    exit 1
-fi
-
-# Run publish script
-"$PLUGIN_DIR/scripts/core/publish.sh" "$ARGUMENTS" "$VAULT_PATH"
+1. Read config from .claude/config.local.json to get sharehub_url and sharehub_repo
+2. Run the publish script:
+   PLUGIN_DIR="$HOME/.claude/plugins/marketplaces/kf-claude/kf-claude"
+   "$PLUGIN_DIR/scripts/core/publish.sh" "$ARGUMENTS" "$(pwd)"
+3. The script will:
+   - Copy images to sharehub repository
+   - Convert image paths for the custom domain
+   - Git commit and push
+   - Wait and verify the page is reachable (up to 60 seconds)
+   - Report the final URL
+4. If the script's verification passes, report success with the URL
+5. If verification times out, still provide the URL with a note about pending deployment
 ```
 
-The script will:
-1. Read sharehub path from `.claude/config.local.json`
-2. Validate note exists in vault
-3. Find all image references in note
-4. Copy images from vault to sharehub repository
-5. Convert image paths for GitHub Pages
-6. Copy note with converted paths to sharehub/documents/
-7. Git commit and push to GitHub
-8. Output the published URL
+## Agent Prompt
+
+```
+You are a publish agent. Publish the note "$ARGUMENTS" to GitHub Pages.
+
+Steps:
+1. Run the publish script:
+   PLUGIN_DIR="$HOME/.claude/plugins/marketplaces/kf-claude/kf-claude"
+   "$PLUGIN_DIR/scripts/core/publish.sh" "$ARGUMENTS" "/Users/zorro/Documents/Obsidian/Claudecode"
+
+2. Parse the script output:
+   - If "✅ Published successfully!" appears with a URL, report success
+   - If "⚠️ Published but page not yet reachable" appears, report partial success
+   - If errors occur, report the issue
+
+3. Return a concise summary with the published URL.
+```
 
 ## Configuration
 
@@ -53,53 +60,23 @@ The script reads from `.claude/config.local.json`:
 
 ```json
 {
-  "vault_path": "/path/to/vault",
-  "sharehub_url": "https://username.github.io/sharehub",
+  "sharehub_url": "https://sharehub.zorro.hk",
   "sharehub_repo": "~/Dev/sharehub"
 }
 ```
 
 ## Image Path Conversion
 
-The script automatically converts:
-- `./images/file.jpg` → `/sharehub/images/file.jpg`
-- `images/file.jpg` → `/sharehub/images/file.jpg`
+The script automatically converts for custom domains:
+- `./images/file.jpg` → `/images/file.jpg`
+- `images/file.jpg` → `/images/file.jpg`
 - External URLs (https://...) remain unchanged
 
-## Expected Output
+For GitHub Pages subdirectory URLs, it uses the repo name prefix.
 
-After successful publish:
-- ✅ Images copied to sharehub repository
-- ✅ Note copied with converted paths
-- ✅ Git commit created with proper message
-- ✅ Pushed to GitHub
-- ✅ GitHub Pages deployment triggered
-- ✅ Published URL displayed
+## Password Protection
 
-## Examples
-
-**Publish with extension:**
-```
-/kf-claude:publish my-article.md
-```
-
-**Publish without extension (auto-adds .md):**
-```
-/kf-claude:publish my-article
-```
-
-**Publish from subdirectory:**
-```
-/kf-claude:publish KFE/KF-MIGRATION-CHECKLIST.md
-```
-
-## Password Protection (Sharehub Feature)
-
-**Sharehub supports password-protected documents via frontmatter!**
-
-### To Make a Document Private:
-
-Add `access: private` to the frontmatter:
+Add `access: private` to frontmatter for password-protected documents:
 
 ```yaml
 ---
@@ -108,11 +85,14 @@ access: private
 ---
 ```
 
-**How it works:**
-- Documents **without** `access: private` → Publicly accessible
-- Documents **with** `access: private` → Password-protected
-- **Password**: "maco" (shared password for all private documents)
-- **Session**: Password remembered until browser closed
+**Password**: "maco" (shared password for all private documents)
+
+## Examples
+
+```
+/kf-claude:publish my-article.md
+/kf-claude:publish KFE/KF-MIGRATION-CHECKLIST.md
+```
 
 ## Troubleshooting
 
@@ -120,3 +100,4 @@ access: private
 - **"sharehub_repo not configured"**: Run `/kf-claude:setup` and provide sharehub path
 - **"Sharehub repo not found"**: Clone sharehub or check path in config
 - **"File not found"**: Check filename and ensure you're in vault directory
+- **Verification timeout**: Page may still be deploying; check URL in a minute
