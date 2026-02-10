@@ -5,6 +5,11 @@ allowed-tools:
   - Task(*)
 ---
 
+## Context
+
+- **Current Directory:** `$PWD`
+- **Config File:** `.claude/config.local.json` (created by `/kf-claude:setup`)
+
 ## Task
 
 Generate a shareable URL for a note using Base64 + zlib compression.
@@ -25,27 +30,34 @@ Task tool call:
     Generate a shareable URL for the note "$ARGUMENTS".
 
     Steps:
-    1. Read the note file from /Users/zorro/Documents/Obsidian/Claudecode/$ARGUMENTS
+    0. Determine the vault path:
+       - Read .claude/config.local.json from the current working directory ($PWD)
+       - Extract the "vault_path" value
+       - If the config file doesn't exist, fall back to $PWD as the vault path
+
+    1. Read the note file from {vault_path}/$ARGUMENTS
        (add .md extension if missing)
 
-    2. Read the file content into a variable, then run this Python script.
-       IMPORTANT: Write the note content to a temp file first to avoid shell escaping issues.
+    2. Write the note content to a temp file, then run the Python script.
+       IMPORTANT: Use a temp file to avoid shell escaping issues.
 
     ```bash
-    # Step A: Write note content to temp file
-    cat > /tmp/share_note.md << 'NOTE_EOF'
-    <PASTE_NOTE_CONTENT_HERE>
-    NOTE_EOF
-
-    # Step B: Run Python to generate URL with integrity check
     python3 << 'PYTHON_SCRIPT'
-    import json
-    import zlib
-    import base64
-    import subprocess
-    import sys
+    import json, zlib, base64, subprocess, sys, os
 
-    # Read content from temp file (avoids shell escaping issues)
+    # Read vault config for share URL (optional override)
+    SHARE_BASE_URL = "https://sharehub.zorro.hk/share"
+    config_path = os.path.join(os.environ.get("PWD", os.getcwd()), ".claude", "config.local.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path) as f:
+                config = json.load(f)
+            if config.get("share_base_url"):
+                SHARE_BASE_URL = config["share_base_url"]
+        except Exception:
+            pass
+
+    # Read content from temp file
     with open('/tmp/share_note.md', 'r') as f:
         content = f.read()
 
@@ -69,24 +81,23 @@ Task tool call:
     encoded = base64.urlsafe_b64encode(compressed).decode('utf-8')
 
     # Generate URL
-    url = f"https://sharehub.zorro.hk/share#{encoded}"
+    url = f"{SHARE_BASE_URL}#{encoded}"
     url_len = len(url)
 
     print(url)
     print(f"\n--- URL length: {url_len} chars ---", file=sys.stderr)
 
     if url_len > 8000:
-        print(f"⚠️  WARNING: URL is {url_len} chars. URLs over 8000 chars are often truncated by messaging apps.", file=sys.stderr)
+        print(f"WARNING: URL is {url_len} chars. URLs over 8000 chars are often truncated by messaging apps.", file=sys.stderr)
         print("Consider using /publish instead for large notes.", file=sys.stderr)
     elif url_len > 4000:
-        print(f"⚠️  CAUTION: URL is {url_len} chars. Some platforms may truncate this.", file=sys.stderr)
+        print(f"CAUTION: URL is {url_len} chars. Some platforms may truncate this.", file=sys.stderr)
         print("Tip: Share via code block or plain text to avoid truncation.", file=sys.stderr)
 
     # Copy to clipboard
     subprocess.run(['pbcopy'], input=url.encode(), check=True)
 
     # Cleanup
-    import os
     os.unlink('/tmp/share_note.md')
     PYTHON_SCRIPT
     ```
