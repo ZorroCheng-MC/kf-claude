@@ -198,6 +198,14 @@ while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
         echo ""
         echo "📄 URL: $PUBLISHED_URL"
         echo ""
+        
+        # Run post-publish verification
+        VERIFY_SCRIPT="$(dirname "$0")/verify-publish.sh"
+        if [[ -f "$VERIFY_SCRIPT" ]]; then
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            bash "$VERIFY_SCRIPT" "$NOTE_FILE" "$VAULT_PATH"
+        fi
+        
         exit 0
     fi
 

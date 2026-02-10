@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-06
+
+### Changed
+- `/publish` command converted to agent-based execution with `Task(*)`
+- `/share` command converted to agent-based execution with `Task(*)`
+- `publish.sh` updated for custom domain support (`sharehub.zorro.hk`)
+- Deployment verification timeout increased from 60 to 90 seconds
+- Image path conversion now handles custom domains (no subdirectory prefix)
+- Published URL format changed from `zorrocheng-mc.github.io/sharehub` to `sharehub.zorro.hk`
+
+### Removed
+- Legacy `.claude/commands/` standalone copies (backed up in mymatrix repo)
+- "Back to sharehub" navigation button from sharehub templates
+
+### Added
+- `/share` command for URL-encoded note sharing (Plannotator-style, no server storage)
+- Agent-based command execution pattern for `/publish` and `/share`
+- Custom domain support in publish workflow
+- 90-second deployment verification with retry logic
+
 ## [1.0.21] - 2025-12-05
 
 ### Added

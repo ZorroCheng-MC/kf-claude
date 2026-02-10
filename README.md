@@ -15,6 +15,7 @@ This plugin supercharges your Obsidian vault with AI-powered automation through 
 - 📚 **Study Guide Generation** - Turn any content into structured learning materials
 - 🔍 **Semantic Search** - Find notes by meaning, not just keywords
 - 🌐 **GitHub Pages Publishing** - Publish notes to the web with password protection
+- 🔗 **Note Sharing** - Share notes via URL-encoded links without server storage
 - 🎯 **Smart Templates** - Pre-built templates for videos, articles, ideas, and repositories
 
 **[See Full Feature List & Examples →](https://zorrocheng-mc.github.io/sharehub/documents/kf-claude-plugin/PLUGIN_FEATURES.html)**
@@ -229,6 +230,7 @@ The setup wizard will:
 | `/semantic-search` | Find notes by meaning | `/semantic-search "productivity tips"` |
 | `/bulk-auto-tag` | Bulk AI tagging for existing notes | `/bulk-auto-tag "*.md"` |
 | `/publish` | Publish note to GitHub Pages | `/publish my-note.md` |
+| `/share` | Share note via URL-encoded link (no server storage) | `/share my-note.md` |
 
 **[See detailed command documentation with examples →](https://zorrocheng-mc.github.io/sharehub/documents/kf-claude-plugin/PLUGIN_FEATURES.html)**
 

@@ -5,6 +5,7 @@ allowed-tools:
   - Bash(date)
   - SlashCommand(/kf-claude:youtube-note)
   - SlashCommand(/kf-claude:gitingest)
+  - SlashCommand(/kf-claude:article)
   - SlashCommand(/kf-claude:study-guide)
   - SlashCommand(/kf-claude:idea)
 ---
@@ -23,8 +24,9 @@ Analyze the input and delegate to the appropriate command. **Check patterns in t
 |----------|--------------|---------|-------------|
 | 1 | **YouTube** | Domain is `youtube.com` or `youtu.be` | `/kf-claude:youtube-note` |
 | 2 | **GitHub** | Domain is `github.com` | `/kf-claude:gitingest` |
-| 3 | **Web Article** | Other `http://` or `https://` URL | `/kf-claude:study-guide` |
-| 4 | **Plain Text** | No URL pattern | `/kf-claude:idea` |
+| 3 | **Long Article** | Input length > 1000 chars OR contains keywords like "article", "blog", "comprehensive" | `/kf-claude:article` |
+| 4 | **Web Article** | Other `http://` or `https://` URL | `/kf-claude:study-guide` |
+| 5 | **Plain Text** | No URL pattern | `/kf-claude:idea` |
 
 ## Routing Logic
 
@@ -42,14 +44,21 @@ SlashCommand("/kf-claude:youtube-note $ARGUMENTS")
 SlashCommand("/kf-claude:gitingest $ARGUMENTS")
 ```
 
-### 3. Web Articles
+### 3. Long Articles
+**Pattern**: Input length > 1000 chars OR contains keywords like "article", "blog", "comprehensive"
+
+```
+SlashCommand("/kf-claude:article $ARGUMENTS")
+```
+
+### 4. Web Articles
 **Pattern**: Starts with `http://` or `https://` (not YouTube or GitHub)
 
 ```
 SlashCommand("/kf-claude:study-guide $ARGUMENTS")
 ```
 
-### 4. Plain Text (Ideas)
+### 5. Plain Text (Ideas)
 **Pattern**: No URL detected
 
 ```
@@ -64,6 +73,9 @@ SlashCommand("/kf-claude:idea $ARGUMENTS")
 
 /kf-claude:capture https://github.com/anthropics/claude-code
 → Delegates to: /kf-claude:gitingest https://github.com/anthropics/claude-code
+
+/kf-claude:capture [long content about scambaiting strategy, 2000 chars]
+→ Delegates to: /kf-claude:article [content]
 
 /kf-claude:capture https://medium.com/article-about-ai
 → Delegates to: /kf-claude:study-guide https://medium.com/article-about-ai

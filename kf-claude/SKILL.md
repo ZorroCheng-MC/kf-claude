@@ -516,9 +516,9 @@ SKILL_DIR="$HOME/.claude/skills/obsidian-vault-manager"
 **What the script does:**
 1. Finds all image references in the note (supports jpg, jpeg, png, gif, svg, webp)
 2. Copies images from Claudecode vault to sharehub repository (preserves directory structure)
-3. Converts relative image paths to absolute GitHub Pages URLs:
-   - `./images/file.jpg` → `/sharehub/images/file.jpg`
-   - `images/file.jpg` → `/sharehub/images/file.jpg`
+3. Converts relative image paths to absolute URLs for custom domain:
+   - `./images/file.jpg` → `/images/file.jpg`
+   - `images/file.jpg` → `/images/file.jpg`
 4. Copies the note with converted paths to `sharehub/documents/`
 5. Creates git commit with proper message format
 6. Pushes to GitHub (triggers GitHub Pages deployment)
@@ -533,15 +533,15 @@ sleep 3
 gh run list --limit 3 --repo ZorroCheng-MC/sharehub 2>/dev/null || echo "Install GitHub CLI with: brew install gh"
 
 echo ""
-echo "⏳ Waiting 60 seconds for GitHub Pages to deploy..."
-sleep 60
+echo "⏳ Waiting 90 seconds for GitHub Pages to deploy..."
+sleep 90
 ```
 
 **Step 4: Verify Published Page**
 
 Use `mcp__MCP_DOCKER__fetch` to verify the page is live:
 ```
-url: https://zorrocheng-mc.github.io/sharehub/documents/${NOTE_FILE%.md}.html
+url: https://sharehub.zorro.hk/documents/${NOTE_FILE%.md}.html
 max_length: 2000
 ```
 
@@ -555,7 +555,7 @@ Check the fetched content for:
 - **Vault**: `/Users/zorro/Documents/Obsidian/Claudecode`
 - **Sharehub**: `/Users/zorro/Dev/sharehub`
 - **Repository**: `ZorroCheng-MC/sharehub`
-- **GitHub Pages**: `https://zorrocheng-mc.github.io/sharehub`
+- **GitHub Pages**: `https://sharehub.zorro.hk`
 
 **Notes:**
 - This workflow requires filesystem access (works in Claude Code CLI)
