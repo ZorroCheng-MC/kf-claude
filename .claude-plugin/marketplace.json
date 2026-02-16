@@ -36,7 +36,8 @@
         "./commands/bulk-auto-tag.md",
         "./commands/semantic-search.md",
         "./commands/setup.md",
-        "./commands/share.md"
+        "./commands/share.md",
+        "./commands/article.md"
       ]
     }
   ]
